@@ -312,14 +312,27 @@ def to_mnist_format(img_hi, out=28, box=20):
     return canvas
 
 
-def render_digit(digit, style, rng, use_variants=True):
-    """숫자 하나 -> 28x28 uint8 배열 (잉크=밝음, MNIST 와 동일 규약)."""
-    if use_variants:
-        strokes, w_scale = pick_allograph(digit, rng)
-    else:
-        strokes, w_scale = ALLOGRAPHS[digit][0][0], ALLOGRAPHS[digit][0][2]
+def render_with(digit, allo_idx, style, rng):
+    """이체를 명시해서 렌더링. 역문제(파라미터 맞추기)에서 사용."""
+    strokes, _, w_scale = ALLOGRAPHS[digit][allo_idx]
     style = dict(style)
     style['stroke_w'] *= w_scale
     traj = build_trajectory(strokes, style, rng)
-    hi = rasterize(traj, style, rng)
-    return np.array(to_mnist_format(hi), dtype=np.uint8)
+    return np.array(to_mnist_format(rasterize(traj, style, rng)), dtype=np.uint8)
+
+
+def render_digit(digit, style, rng, use_variants=True):
+    """숫자 하나 -> 28x28 uint8 배열 (잉크=밝음, MNIST 와 동일 규약)."""
+    if use_variants:
+        w = np.array([e[1] for e in ALLOGRAPHS[digit]], float)
+        idx = int(rng.choice(len(w), p=w / w.sum()))
+    else:
+        idx = 0
+    return render_with(digit, idx, style, rng)
+
+
+NEUTRAL_STYLE = dict(
+    slant_deg=3.0, aspect=1.0, curvature=0.0, tremor_amp=0.008, tremor_freq=9.0,
+    overshoot=0.010, corner_round=0.60, stroke_w=0.150, width_var=0.25,
+    ink_noise=0.06, rotation_deg=0.0, ctrl_jitter=0.010, endpoint_gap=0.0,
+)

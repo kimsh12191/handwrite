@@ -21,9 +21,18 @@ from . import hangul
 # ---------------------------------------------------------------------------
 # 블록 -> 낱글자
 # ---------------------------------------------------------------------------
-def _profile(mask, axis):
+def _profile(mask, axis, sigma=None, scale=0.02):
+    """
+    투영 프로파일. **평활 폭이 중요하다.**
+
+    처음에 sigma 를 프로파일 길이에 비례시켰더니(폭 1400px 이면 sigma 28)
+    글자 사이 골짜기가 통째로 뭉개져 절단 위치가 무의미해졌다. 평활은
+    **찾으려는 것의 크기**(글자 폭)에 비례해야지 전체 길이에 비례하면 안 된다.
+    """
     p = mask.sum(axis).astype(float)
-    return gaussian_filter(p, max(1.0, len(p) * 0.02))
+    if sigma is None:
+        sigma = max(1.0, len(p) * scale)
+    return gaussian_filter(p, max(0.6, sigma))
 
 
 def _snap_cuts(prof, n_parts, window=0.35):
@@ -59,14 +68,41 @@ def _assign(comps, cuts, key):
     return groups
 
 
+def _split_words(comps, n_words):
+    """
+    성분을 가로 간격이 큰 곳에서 끊어 어절 n_words 개로. 전사의 띄어쓰기를
+    제약으로 쓴다 — 어절 경계는 글자 경계보다 훨씬 뚜렷하므로 먼저 잡는 편이
+    안정적이다. 개수를 못 맞추면 None (호출부가 균등 분할로 폴백).
+    """
+    if n_words <= 1 or len(comps) < n_words:
+        return None
+    cs = sorted(comps, key=lambda c: c['x0'])
+    gaps = [(cs[i + 1]['x0'] - cs[i]['x1'], i) for i in range(len(cs) - 1)]
+    gaps.sort(reverse=True)
+    cutpts = sorted(i for _, i in gaps[:n_words - 1])
+    groups, prev = [], 0
+    for i in cutpts:
+        groups.append(cs[prev:i + 1])
+        prev = i + 1
+    groups.append(cs[prev:])
+    return groups if all(groups) else None
+
+
 def split_block(block, mask, text):
     """
     블록을 전사 text 의 글자 수만큼 자른다.
-    text 의 공백은 어절 구분으로 쓰고, 공백이 아닌 문자 하나 = 글자 하나.
+
+    2단계로 나눈다.
+      1) 전사의 **띄어쓰기**로 어절을 먼저 가른다 (간격이 크므로 안정적)
+      2) 어절 안에서 글자 수만큼 투영 절단
+
+    1단계를 건너뛰면 균등 분할이 띄어쓰기를 글자 폭으로 착각해 뒤가 전부
+    밀린다. 실측에서 인스턴스 오염의 주원인이었다.
 
     returns [dict(ch, box, cut_cost), ...]  — ch 가 한글 음절이 아니면 None
     """
-    chars = [ch for ch in text if not ch.isspace()]
+    words = [w for w in text.split() if w]
+    chars = [ch for w in words for ch in w]
     if not chars:
         return []
     x0, y0, x1, y1 = block['box']
@@ -74,24 +110,40 @@ def split_block(block, mask, text):
     if sub.size == 0:
         return []
 
-    prof = _profile(sub, 0)
-    cuts, costs = _snap_cuts(prof, len(chars))
     rel = [dict(x0=c['x0'] - x0, x1=c['x1'] - x0,
                 y0=c['y0'] - y0, y1=c['y1'] - y0) for c in block['comps']]
-    groups = _assign(rel, cuts, 'x')
+    wgroups = _split_words(rel, len(words))
+    if wgroups is None:
+        wgroups, words = [rel], [''.join(words)]
 
     out = []
-    for i, (ch, g) in enumerate(zip(chars, groups)):
-        if not g:
-            out.append(dict(ch=None, box=None, cut_cost=None, reason='빈 조각'))
-            continue
-        bx = (x0 + min(c['x0'] for c in g), y0 + min(c['y0'] for c in g),
-              x0 + max(c['x1'] for c in g), y0 + max(c['y1'] for c in g))
-        cost = max([costs[i - 1] if i > 0 else 0.0,
-                    costs[i] if i < len(costs) else 0.0])
-        out.append(dict(ch=ch if hangul.is_syllable(ch) else None,
-                        box=bx, cut_cost=cost,
-                        reason=None if hangul.is_syllable(ch) else '한글 아님'))
+    for wcomps, w in zip(wgroups, words):
+        n = len(w)
+        wx0 = min(c['x0'] for c in wcomps)
+        wx1 = max(c['x1'] for c in wcomps)
+        span = max(1, wx1 - wx0)
+        if n <= 1:
+            groups, costs = [wcomps], [0.0]
+        else:
+            # 평활 폭은 **글자 폭**에 비례해야 한다 (블록 폭이 아니라)
+            prof = _profile(sub[:, wx0:wx1], 0, sigma=max(0.8, span / n * 0.10))
+            cuts, costs = _snap_cuts(prof, n)
+            cuts = [c + wx0 for c in cuts]
+            groups = _assign(wcomps, cuts, 'x')
+
+        for i, ch in enumerate(w):
+            g = groups[i] if i < len(groups) else []
+            if not g:
+                out.append(dict(ch=None, box=None, cut_cost=None,
+                                reason='빈 조각'))
+                continue
+            bx = (x0 + min(c['x0'] for c in g), y0 + min(c['y0'] for c in g),
+                  x0 + max(c['x1'] for c in g), y0 + max(c['y1'] for c in g))
+            cost = max([costs[i - 1] if 0 < i <= len(costs) else 0.0,
+                        costs[i] if i < len(costs) else 0.0])
+            out.append(dict(ch=ch if hangul.is_syllable(ch) else None,
+                            box=bx, cut_cost=float(cost),
+                            reason=None if hangul.is_syllable(ch) else '한글 아님'))
     return out
 
 

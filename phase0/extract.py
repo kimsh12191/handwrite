@@ -46,10 +46,35 @@ def crop_to_mnist(ink, box, pad=4):
         Image.fromarray(sub.astype(np.uint8))), dtype=np.uint8)
 
 
-def extract(path, **kw):
-    """returns (ink, boxes, [img28,...])"""
+def baseline_angle(boxes):
+    """
+    성분 중심들을 지나는 직선의 각도(도). 기울어진 줄에 쓴 경우를 잡는다.
+    글자꼴이 아니라 레이아웃 성질이므로 피팅 전에 제거하는 편이 낫다.
+    """
+    if len(boxes) < 2:
+        return 0.0
+    c = np.array([[(b[0]+b[2])/2, (b[1]+b[3])/2] for b in boxes], float)
+    c -= c.mean(0)
+    # 주성분 방향 = 글자들이 늘어선 방향
+    u, s, vt = np.linalg.svd(c, full_matrices=False)
+    dx, dy = vt[0]
+    return float(np.degrees(np.arctan2(dy, dx)))
+
+
+def extract(path, deskew=True, **kw):
+    """returns (ink, boxes, [img28,...], angle)"""
     ink, mask = ink_map(path, **{k: v for k, v in kw.items()
                                  if k in ('bg_sigma', 'thresh')})
-    boxes = components(mask, **{k: v for k, v in kw.items()
-                                if k in ('min_pix', 'merge_gap')})
-    return ink, boxes, [crop_to_mnist(ink, b) for b in boxes]
+    comp_kw = {k: v for k, v in kw.items() if k in ('min_pix', 'merge_gap')}
+    boxes = components(mask, **comp_kw)
+
+    angle = baseline_angle(boxes) if deskew else 0.0
+    if deskew and abs(angle) > 2:
+        im = Image.fromarray(ink.astype(np.uint8)).rotate(
+            angle, resample=Image.BICUBIC, expand=True, fillcolor=0)
+        ink = np.array(im, float)
+        mask = ink > (kw.get('thresh', 0.30) * 255)
+        mask = binary_closing(mask, np.ones((3, 3)))
+        boxes = components(mask, **comp_kw)
+
+    return ink, boxes, [crop_to_mnist(ink, b) for b in boxes], angle

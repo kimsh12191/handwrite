@@ -21,10 +21,27 @@ from . import contract
 OUT = '/tmp/q1'
 
 
-def blur_l2(a, b, sigma=1.2):
-    """수렴 추적용 거리. 파라미터 선택을 이걸로 하지는 않는다."""
-    fa = gaussian_filter(a.astype(float)/255., sigma)
-    fb = gaussian_filter(b.astype(float)/255., sigma)
+def _binarize(a, frac=0.45):
+    """최대 강도의 frac 이상을 잉크로. 사진의 흐림/노출 차이를 제거한다."""
+    a = a.astype(float)
+    m = a.max()
+    return (a > frac * m).astype(float) if m > 0 else a
+
+
+def blur_l2(a, b, sigma=1.2, binarize=True):
+    """
+    형태 거리. 흐린 뒤 정규화 L2.
+
+    binarize=True 가 중요하다. 실제 사진은 흐릿하고 렌더는 선명한데,
+    그대로 비교하면 옵티마이저가 '흐릿함'을 '획을 굵게'로 흉내내서
+    실제보다 2배 굵은 획을 고른다(실측 확인). 이진화로 그 경로를 막는다.
+    """
+    if binarize:
+        a, b = _binarize(a), _binarize(b)
+    else:
+        a, b = a.astype(float)/255., b.astype(float)/255.
+    fa = gaussian_filter(a, sigma)
+    fb = gaussian_filter(b, sigma)
     fa /= np.linalg.norm(fa)+1e-9
     fb /= np.linalg.norm(fb)+1e-9
     return float(np.linalg.norm(fa-fb))

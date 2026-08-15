@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+
+# Downloaded / derived corpora are large and reproducible from scripts.
+data/raw/
+data/extracted/
+data/fonts_manual/
+
+# Feature CSVs are regenerable; reports (JSON/MD) are committed as evidence.
+data/features/

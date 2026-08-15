@@ -1,0 +1,79 @@
+[
+  {
+    "id": "hanguldb_pe92_test",
+    "group": "korean_shape",
+    "name": "HangulDB PE92 test",
+    "auto": true,
+    "url": "https://github.com/callee2006/HangulDB/raw/refs/heads/master/PE92_test.zip",
+    "filename": "PE92_test.zip",
+    "expected_size": "~6 MB",
+    "license_access": "Public GitHub; repository README says ETRI agreed to public opening",
+    "purpose": "2,350 Hangul classes; real handwriting geometry breadth"
+  },
+  {
+    "id": "hanguldb_seri_test",
+    "group": "korean_shape",
+    "name": "HangulDB SERI95 test",
+    "auto": true,
+    "url": "https://github.com/callee2006/HangulDB/raw/refs/heads/master/SERI_Test.zip",
+    "filename": "SERI_Test.zip",
+    "expected_size": "~34 MB",
+    "license_access": "Public GitHub; repository README says ETRI agreed to public opening",
+    "purpose": "520 frequent Hangul classes with dense within-class variation"
+  },
+  {
+    "id": "uji_v2",
+    "group": "latin_digit_motor",
+    "name": "UJI Pen Characters v2",
+    "auto": true,
+    "url": "https://archive.ics.uci.edu/static/public/177/uji%2Bpen%2Bcharacters%2Bversion%2B2.zip",
+    "filename": "uji_pen_characters_v2.zip",
+    "expected_size": "~2.2 MB",
+    "license_access": "CC BY 4.0",
+    "purpose": "60 writers, XY stroke sequences for Latin/digits"
+  },
+  {
+    "id": "emnist",
+    "group": "latin_digit_shape",
+    "name": "EMNIST binary gzip bundle",
+    "auto": true,
+    "url": "https://biometrics.nist.gov/cs_links/EMNIST/gzip.zip",
+    "filename": "emnist_gzip.zip",
+    "expected_size": "large",
+    "license_access": "Official NIST distribution; verify terms for deployment",
+    "purpose": "Large-scale digit/Latin shape coverage"
+  },
+  {
+    "id": "nanum_legacy",
+    "group": "korean_font_probe",
+    "name": "Naver Nanum font TTF bundle",
+    "auto": true,
+    "url": "http://cdn.naver.com/naver/NanumFont/fontfiles/NanumFont_TTF_ALL.zip",
+    "filename": "NanumFont_TTF_ALL.zip",
+    "expected_size": "~14 MB",
+    "license_access": "Naver Nanum font license",
+    "purpose": "Contains NanumPen/NanumBrush; only a small style probe, not 109-style corpus"
+  },
+  {
+    "id": "clova_109",
+    "group": "korean_font_probe",
+    "name": "Clova Nanum Handwriting 109 fonts",
+    "auto": false,
+    "url": "https://clova.ai/handwriting/list.html",
+    "filename": "MANUAL",
+    "expected_size": "109 TTFs",
+    "license_access": "Free for users; official page prohibits paid provision/sale/distribution",
+    "purpose": "High-value Korean style stress-test corpus"
+  },
+  {
+    "id": "aihub_71307",
+    "group": "korean_motor",
+    "name": "AI-Hub personal handwriting / imitation handwriting dataset",
+    "auto": false,
+    "url": "https://www.aihub.or.kr/aihubdata/data/view.do?dataSetSn=71307",
+    "filename": "MANUAL_APPROVAL",
+    "expected_size": "large",
+    "license_access": "AI-Hub application/usage policy",
+    "purpose": "Primary Korean x/y/pressure/velocity/acceleration motor ground truth"
+  }
+]

@@ -1,0 +1,10 @@
+AI-Hub dataset 71307 official schema checked on 2026-08-15:
+x coordinate range: 0~756
+y coordinate range: 0~88
+actions: DOWN, UP, MOVE
+contains pressure, velocity_magnitude, acceleration_magnitude,
+angle_consecutive_samples, log_curvature_radius, first/second differences,
+and stroke_length_ratio fields.
+
+Correction: an earlier note that trajectory y exceeded the 88px image height
+was based on a misread example. Do not use that claim.

@@ -187,7 +187,7 @@ writer metadata
 
 # 7. 결과를 어떻게 읽나
 
-예를 들어 특정 문자 데이터에서 PCA 결과가:
+원래 이 절은 다음 같은 결과를 기대하고 쓰였다.
 
 ```text
 PC1 aspect          42%
@@ -196,16 +196,28 @@ PC3 asymmetry       15%
 PC4 compactness      9%
 ```
 
-라면,
+이런 모양이면 renderer에 aspect / rotation / asymmetry / closure 자유도를
+넣으면 된다는 뜻이 된다.
 
-현재 renderer가 최소한 다음 자유도를 표현할 필요가 있다는 뜻이다.
+**실제로 돌려 보니 이런 결과는 나오지 않았다.** SERI95 520클래스 평균은
 
 ```text
-aspect
-rotation
-asymmetry
-shape compactness / closure
+PC1 22.8%   PC2 17.9%   PC3 14.2%   PC4 10.8%   PC5 8.8%
 ```
+
+이고 loading이 한 축에 4개 이상 섞여서 축에 이름을 붙일 수가 없다.
+자세한 것은 `reports/phase2_findings.md` 1절.
+
+그러니 이 절은 이렇게 읽어야 한다.
+
+> **깔끔한 축이 안 나오는 것 자체가 결과다.** 그것은 손글씨에 구조가 없다는
+> 뜻이 아니라, 지금 보고 있는 feature 기저가 틀렸다는 뜻이다.
+> 음절 전체의 요약통계는 국소적인 변화를 전부 섞어 버린다.
+
+축이 안 나올 때 renderer에 파라미터를 넣지 말고 기저를 바꾼다.
+그리고 기저를 바꾼 뒤에는 **그 척도가 저차원을 저차원으로 읽는지 먼저
+확인한다** (`scripts/basis_control.py`). 이 확인이 없으면 "성분이 28개 필요하다"는
+결과가 손글씨 이야기인지 픽셀 기저 이야기인지 구분되지 않는다.
 
 단, PCA feature를 그대로 renderer parameter로 복사하지 않는다.
 
@@ -220,13 +232,15 @@ shape compactness / closure
 
 # 8. 언제 renderer 구현을 시작할까
 
-다음 정도가 확보되면 시작한다.
+다음 정도가 확보되면 시작한다. 현재 상태를 옆에 적는다.
 
-- `ㄱ / ㄴ / ㄹ / ㅁ / ㅅ / ㅇ` 주요 variation 확인
-- 숫자 loop / angular / stem family variation 확인
-- 영문 loop / hump / angular / descender family 확인
-- 한글 초성/중성/종성 context effect 확인
-- trajectory에서 stroke topology 확인
+| 항목 | 상태 |
+|---|---|
+| 한글 초성/중성/종성 context effect 확인 | **음절 수준 완료.** 종성 효과의 약 2/3가 수직 압축 1개로 설명되고 1/3이 남는다 |
+| `ㄱ / ㄴ / ㄹ / ㅁ / ㅅ / ㅇ` 주요 variation 확인 | 미완. 자모 분할이 없어 자모 단위로 못 봤다 |
+| 숫자 loop / angular / stem family variation | 미착수. EMNIST 미확보 |
+| 영문 loop / hump / angular / descender family | 미착수. EMNIST 미확보 |
+| trajectory에서 stroke topology | 미착수. UJI·AI-Hub 미확보 |
 
 그 전에 renderer를 계속 확장하면 다시 추측 기반 설계가 된다.
 
@@ -322,4 +336,15 @@ VLM에게 전체 parameter vector를 한 번에 추측시키지 않는다.
 8. VLM fitting
 ```
 
-현재는 **1~3 사이**다.
+현재는 **2~3 사이**다.
+
+- 1은 한글 offline geometry만 끝났다. EMNIST / UJI / Nanum 폰트는 이 환경의
+  egress 정책에 막혀 미확보다. AI-Hub 71307은 여전히 승인 대기다.
+- 2는 한글 음절 수준에서 끝났고 결과는 `reports/phase2_findings.md`에 있다.
+  자모 수준은 아직이다 — 분할이 없다.
+- 3은 부분 초안이 `reports/taxonomy_v1.md`에 있다. 근거 있는 축만 넣었고
+  Global/Page·Motor·Brush는 비워 두었다.
+
+4(renderer 구현)로 넘어가기 전에 알아 둘 것: 전역 파라미터만 가진 renderer는
+이미 기각되었다. 실제 클래스 내부 변동(28성분)이 전역 affine+굵기(4~5성분)를
+크게 넘는다는 것이 대조군과 함께 측정되었다.

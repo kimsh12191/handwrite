@@ -201,6 +201,19 @@ def main():
     summary["gap_recovered"] = float((match - mis) / (ceil - mis)) if ceil > mis else None
     summary["residual_to_ceiling"] = float(ceil - match)
 
+    # The aggregate residual could in principle be produced by a few bad pairs, so
+    # also report how many pairs individually fall short of their own noise floor.
+    c = np.array([p["ceiling_cosine"] for p in pairs])
+    m = np.array([p["matched_cosine"] for p in pairs])
+    sd = float(c.std())
+    summary["ceiling_sd"] = sd
+    summary["residual_in_sd"] = float((c.mean() - m.mean()) / sd) if sd > 0 else None
+    summary["pairs_residual_over_3sd_pct"] = float(((c - m) > 3 * sd).mean() * 100)
+    # Guard against the compression sweep clipping at its own edge.
+    f = np.array([p["best_compression"] for p in pairs])
+    summary["compression_at_sweep_edge_pct"] = float(
+        ((f <= F_GRID[0] + 1e-6) | (f >= F_GRID[-1] - 1e-6)).mean() * 100)
+
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"summary": summary, "pairs": pairs}, ensure_ascii=False, indent=2),

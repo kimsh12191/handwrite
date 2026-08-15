@@ -3,27 +3,6 @@
   "verdict": "confirmed",
   "archives": [
     {
-      "archive": "data/raw/PE92_test.zip",
-      "class_files": 2350,
-      "images": 23401,
-      "bad_header": [],
-      "trailing_bytes": [],
-      "multi_code_files": [],
-      "undecodable_codes": [],
-      "non_syllable_codes": [],
-      "code_matches_filename_stem": 2350,
-      "code_vs_stem_checked": 2350,
-      "type_bytes": {
-        "0": 23401
-      },
-      "min_side": 1,
-      "max_side": 100,
-      "per_class_min": 9,
-      "per_class_median": 10,
-      "per_class_max": 10,
-      "all_checks_pass": true
-    },
-    {
       "archive": "data/raw/PE92_train.zip",
       "class_files": 2350,
       "images": 200215,

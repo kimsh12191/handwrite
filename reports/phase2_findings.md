@@ -76,8 +76,16 @@ area_ratio +0.49, compactness -0.46, lr_asym -0.46, aspect +0.39
 PC 모드를 그림으로 보면 이유가 드러난다 (`reports/modes/seri95/*.png`,
 맨 왼쪽이 평균, 이후 PC1~PC4를 빨강/파랑 부호로 표시).
 상위 성분이 전부 **획의 양옆에 빨강-파랑이 짝지어 나타나는 형태**다.
+`동`처럼 ㅇ이 있는 음절에서는 ㅇ 둘레에 동심원 형태의 빨강-파랑 띠가 나온다.
 이것은 모양이 바뀌는 모드가 아니라 획이 조금씩 어긋나는 모드다.
 즉 상위 분산이 형태가 아니라 **정합(registration)** 에 쓰이고 있다.
+
+여기서 한 가지를 구분해야 한다. 샘플은 이미 bounding box로 잘려 정규화되므로
+**전역 평행이동과 전역 크기는 이미 제거된 상태**다. 그런데도 정합 모드가 상위를
+차지한다는 것은, 남은 어긋남이 글자 전체의 이동이 아니라 **구성요소들의 상대
+위치가 흔들리는 것**이라는 뜻이다. `동`의 예에서 ㅗ의 가로획 높이와 ㅇ의 크기가
+따로 논다. 이것은 4절에서 종성 압축이 실제로 측정되는 것과 같은 방향의 증거이고,
+taxonomy에서 packing을 음절 층 파라미터로 두어야 하는 이유이기도 하다.
 
 ## 3. 그래서 척도를 먼저 검증한다 — 이 측정은 저차원을 저차원으로 읽는가
 
@@ -98,6 +106,9 @@ real 데이터와 똑같은 bbox 정규화·리샘플·PCA를 통과시킨다.
 | 회전+전단+이방성 스케일 | 4 | **4** | 6 | 40.6% |
 | + 획 굵기 | 5 | **5** | 7 | 41.4% |
 | **실제 SERI95 클래스** | — | **28** | 43 | 11.5% |
+
+PE92 샘플로 만든 합성군도 같다 (1-DOF→2, 2-DOF→4, 4-DOF→5, 5-DOF→5).
+`reports/seri95_basis_control.json`, `reports/pe92_basis_control.json`.
 
 척도는 저차원 족을 저차원으로 정확히 읽는다. 따라서 (B)는 기각되고 28은 실제
 신호다.
@@ -140,10 +151,16 @@ HANDOFF §5는 같은 자모라도 역할이 다르면 모양이 다를 수 있�
 | 불일치 대조 (우연 수준) | 0.780 | 0.767 |
 | 우연→천장 구간 중 회수한 비율 | **0.680** | **0.665** |
 | 천장까지 남은 잔차 | 0.064 | 0.068 |
+| 잔차 / 천장 표준편차 | 10.4σ | 7.7σ |
+| 잔차가 개별적으로 3σ를 넘는 쌍 | **92.0%** | **76.5%** |
 
-두 코퍼스가 같은 답을 준다. **압축 하나가 우연에서 천장까지의 68%를 가져간다.**
-동시에 잔차 0.064는 천장의 표본 산포(p10~p90 폭 약 ±0.008)의 8배라서 잡음으로
-볼 수 없다.
+두 코퍼스가 같은 답을 준다. **압축 하나가 우연에서 천장까지의 약 2/3를
+가져간다.** 동시에 잔차는 천장 표준편차의 8~10배이고, 그것이 소수 이상치
+때문이 아니라는 것도 확인된다 — 쌍을 개별로 보아도 76.5%(PE92) / 92.0%(SERI95)가
+자기 자신의 잡음 하한을 3σ 넘게 밑돈다.
+
+압축 계수 스윕이 탐색 범위 끝에 몰려서 생긴 값도 아니다. 경계에 닿은 쌍은
+2.4%(PE92) / 2.7%(SERI95)뿐이다.
 
 답은 양자택일이 아니다.
 
@@ -186,6 +203,20 @@ f 구간의 폭이 평균 0.056이다(스윕 격자 0.025). 즉 개별 쌍에서
 
 ## 재현
 
+전체를 한 번에 돌리려면:
+
+```bash
+pip install -r requirements.txt
+python scripts/download_public.py
+python scripts/bootstrap_after_download.py
+```
+
+`bootstrap_after_download.py`는 입력이 없는 단계를 건너뛰고 마지막에
+무엇이 돌았고 무엇이 왜 건너뛰어졌는지 출력한다. 막혀서 안 돈 단계와
+통과한 단계가 같아 보이면 안 되기 때문이다.
+
+단계별로 돌리려면:
+
 ```bash
 python scripts/download_public.py --only hanguldb_git
 python scripts/verify_dataset.py data/raw/PE92_train.zip data/raw/SERI_Test.zip
@@ -198,7 +229,7 @@ python scripts/pca_report.py data/features/seri95_shapes.csv --out reports/seri9
 
 python scripts/shape_space.py data/extracted/seri95 --out reports/seri95_shape_space.json \
     --classes 120 --modes-dir reports/modes/seri95
-python scripts/basis_control.py data/extracted/seri95/UAC00_가 --out reports/basis_control.json
+python scripts/basis_control.py data/extracted/seri95/UAC00_가 --out reports/seri95_basis_control.json
 python scripts/jamo_context.py data/extracted/seri95 --out reports/seri95_jamo_context.json
 python scripts/jamo_context.py data/extracted/pe92   --out reports/pe92_jamo_context.json
 ```

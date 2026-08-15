@@ -1,0 +1,36 @@
+{
+  "base_sample": "data/extracted/pe92/UAC00_가/b0a1_00000.png",
+  "grid": 24,
+  "family_size": 100,
+  "controls": {
+    "1dof_rotation": {
+      "declared_dof": 1,
+      "n": 100,
+      "pcs_for_80pct": 2,
+      "pcs_for_90pct": 3,
+      "pc1_explained": 0.5960845245224742
+    },
+    "2dof_rotation_shear": {
+      "declared_dof": 2,
+      "n": 100,
+      "pcs_for_80pct": 4,
+      "pcs_for_90pct": 7,
+      "pc1_explained": 0.4147052803833049
+    },
+    "4dof_rotation_shear_scale": {
+      "declared_dof": 4,
+      "n": 100,
+      "pcs_for_80pct": 5,
+      "pcs_for_90pct": 7,
+      "pc1_explained": 0.40654944635467655
+    },
+    "5dof_plus_thickness": {
+      "declared_dof": 5,
+      "n": 100,
+      "pcs_for_80pct": 5,
+      "pcs_for_90pct": 9,
+      "pc1_explained": 0.4101754777326443
+    }
+  },
+  "reading": "Compare pcs_for_80pct against the same statistic on the real class. If a declared-4-dof family needs a comparable number of components, the ink-map basis cannot be used to size the renderer parameter budget."
+}

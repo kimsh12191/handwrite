@@ -159,7 +159,11 @@
         "p90": 0.9424547851085663
       }
     },
-    "residual_to_ceiling": 0.06802021692654414
+    "residual_to_ceiling": 0.06802021692654414,
+    "ceiling_sd": 0.008835792684881435,
+    "residual_in_sd": 7.698258588947064,
+    "pairs_residual_over_3sd_pct": 76.45290581162325,
+    "compression_at_sweep_edge_pct": 2.404809619238477
   },
   "pairs": [
     {
